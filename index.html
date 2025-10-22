@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Календарь текущего месяца</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .calendar-container {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+            max-width: 400px;
+            width: 100%;
+        }
+
+        .calendar-header {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .calendar-header h1 {
+            font-size: 1.5em;
+            margin-bottom: 5px;
+        }
+
+        .calendar-header .current-date {
+            font-size: 2.5em;
+            font-weight: bold;
+        }
+
+        .weekdays {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            background: #f8f9fa;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .weekday {
+            padding: 10px;
+            text-align: center;
+            font-weight: bold;
+            color: #495057;
+            font-size: 0.9em;
+        }
+
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 1px;
+            background: #e9ecef;
+        }
+
+        .calendar-day {
+            background: white;
+            padding: 15px 5px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            min-height: 60px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .calendar-day:hover {
+            background: #e3f2fd;
+            transform: scale(1.05);
+        }
+
+        .calendar-day.empty {
+            background: #f8f9fa;
+            cursor: default;
+        }
+
+        .calendar-day.empty:hover {
+            background: #f8f9fa;
+            transform: none;
+        }
+
+        .calendar-day.today {
+            background: #4facfe;
+            color: white;
+            font-weight: bold;
+            border-radius: 50%;
+            position: relative;
+        }
+
+        .calendar-day.today::after {
+            content: '';
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            width: 8px;
+            height: 8px;
+            background: #ff6b6b;
+            border-radius: 50%;
+        }
+
+        .day-number {
+            font-size: 1.1em;
+            font-weight: 500;
+        }
+
+        .navigation {
+            display: flex;
+            justify-content: space-between;
+            padding: 15px 20px;
+            background: #f8f9fa;
+            border-top: 1px solid #e9ecef;
+        }
+
+        .nav-btn {
+            background: #4facfe;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: bold;
+        }
+
+        .nav-btn:hover {
+            background: #3a8fd4;
+            transform: translateY(-2px);
+        }
+
+        .nav-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="calendar-container">
+        <div class="calendar-header">
+            <h1 id="current-month-year"></h1>
+            <div class="current-date" id="current-date"></div>
+        </div>
+        
+        <div class="weekdays">
+            <div class="weekday">Пн</div>
+            <div class="weekday">Вт</div>
+            <div class="weekday">Ср</div>
+            <div class="weekday">Чт</div>
+            <div class="weekday">Пт</div>
+            <div class="weekday">Сб</div>
+            <div class="weekday">Вс</div>
+        </div>
+        
+        <div class="calendar-grid" id="calendar-grid"></div>
+        
+        <div class="navigation">
+            <button class="nav-btn" id="prev-month">← Предыдущий</button>
+            <button class="nav-btn" id="today-btn">Сегодня</button>
+            <button class="nav-btn" id="next-month">Следующий →</button>
+        </div>
+    </div>
+
+    <script>
+        class Calendar {
+            constructor() {
+                this.currentDate = new Date();
+                this.currentYear = this.currentDate.getFullYear();
+                this.currentMonth = this.currentDate.getMonth();
+                this.today = new Date();
+                
+                this.init();
+            }
+
+            init() {
+                this.renderCalendar();
+                this.addEventListeners();
+            }
+
+            getMonthName(month) {
+                const months = [
+                    'Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь',
+                    'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'
+                ];
+                return months[month];
+            }
+
+            getDaysInMonth(year, month) {
+                return new Date(year, month + 1, 0).getDate();
+            }
+
+            getFirstDayOfMonth(year, month) {
+                return new Date(year, month, 1).getDay();
+            }
+
+            adjustFirstDay(day) {
+                // Преобразуем воскресенье (0) в 6, остальные дни уменьшаем на 1
+                return day === 0 ? 6 : day - 1;
+            }
+
+            renderCalendar() {
+                const monthYearElement = document.getElementById('current-month-year');
+                const currentDateElement = document.getElementById('current-date');
+                const calendarGrid = document.getElementById('calendar-grid');
+                
+                // Очищаем календарь
+                calendarGrid.innerHTML = '';
+                
+                // Устанавливаем заголовки
+                const monthName = this.getMonthName(this.currentMonth);
+                monthYearElement.textContent = `${monthName} ${this.currentYear}`;
+                currentDateElement.textContent = this.today.getDate();
+                
+                // Получаем информацию о месяце
+                const daysInMonth = this.getDaysInMonth(this.currentYear, this.currentMonth);
+                const firstDay = this.getFirstDayOfMonth(this.currentYear, this.currentMonth);
+                const adjustedFirstDay = this.adjustFirstDay(firstDay);
+                
+                // Добавляем пустые ячейки для дней предыдущего месяца
+                for (let i = 0; i < adjustedFirstDay; i++) {
+                    const emptyDay = document.createElement('div');
+                    emptyDay.className = 'calendar-day empty';
+                    calendarGrid.appendChild(emptyDay);
+                }
+                
+                // Добавляем дни текущего месяца
+                for (let day = 1; day <= daysInMonth; day++) {
+                    const dayElement = document.createElement('div');
+                    dayElement.className = 'calendar-day';
+                    dayElement.innerHTML = `<div class="day-number">${day}</div>`;
+                    
+                    // Проверяем, является ли день сегодняшним
+                    if (this.currentYear === this.today.getFullYear() && 
+                        this.currentMonth === this.today.getMonth() && 
+                        day === this.today.getDate()) {
+                        dayElement.classList.add('today');
+                    }
+                    
+                    // Добавляем обработчик клика
+                    dayElement.addEventListener('click', () => {
+                        this.selectDay(day);
+                    });
+                    
+                    calendarGrid.appendChild(dayElement);
+                }
+            }
+
+            selectDay(day) {
+                const selectedDate = new Date(this.currentYear, this.currentMonth, day);
+                alert(`Выбрана дата: ${selectedDate.toLocaleDateString('ru-RU')}`);
+            }
+
+            changeMonth(direction) {
+                if (direction === 'prev') {
+                    this.currentMonth--;
+                    if (this.currentMonth < 0) {
+                        this.currentMonth = 11;
+                        this.currentYear--;
+                    }
+                } else if (direction === 'next') {
+                    this.currentMonth++;
+                    if (this.currentMonth > 11) {
+                        this.currentMonth = 0;
+                        this.currentYear++;
+                    }
+                }
+                this.renderCalendar();
+            }
+
+            goToToday() {
+                this.currentDate = new Date();
+                this.currentYear = this.currentDate.getFullYear();
+                this.currentMonth = this.currentDate.getMonth();
+                this.renderCalendar();
+            }
+
+            addEventListeners() {
+                document.getElementById('prev-month').addEventListener('click', () => {
+                    this.changeMonth('prev');
+                });
+
+                document.getElementById('next-month').addEventListener('click', () => {
+                    this.changeMonth('next');
+                });
+
+                document.getElementById('today-btn').addEventListener('click', () => {
+                    this.goToToday();
+                });
+            }
+        }
+
+        // Инициализация календаря при загрузке страницы
+        document.addEventListener('DOMContentLoaded', () => {
+            new Calendar();
+        });
+    </script>
+</body>
+</html>
