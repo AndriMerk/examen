@@ -8,10 +8,67 @@ function resetScrollPosition() {
     window.scrollTo(0, 0);
 }
 
-// Функция для выбора случайных вопросов
+// Улучшенная функция для выбора случайных вопросов
 function getRandomQuestions() {
-    const shuffled = [...questions].sort(() => 0.5 - Math.random());
-    return shuffled.slice(0, 10);
+    // Создаем копию массива вопросов
+    const questionsCopy = [...questions];
+    const selectedQuestions = [];
+    
+    // Используем улучшенный алгоритм Фишера-Йетса для перемешивания
+    for (let i = questionsCopy.length - 1; i > 0; i--) {
+        // Генерируем случайный индекс с использованием криптографически безопасного генератора
+        const randomBuffer = new Uint32Array(1);
+        crypto.getRandomValues(randomBuffer);
+        const j = randomBuffer[0] % (i + 1);
+        
+        // Меняем местами элементы
+        [questionsCopy[i], questionsCopy[j]] = [questionsCopy[j], questionsCopy[i]];
+    }
+    
+    // Берем первые 10 вопросов из тщательно перемешанного массива
+    return questionsCopy.slice(0, 10);
+}
+
+// Альтернативный вариант - еще более случайное перемешивание
+function getRandomQuestionsAlternative() {
+    // Создаем массив с индексами вопросов и случайными весами
+    const questionsWithWeights = questions.map((question, index) => ({
+        question,
+        weight: Math.random() + Math.random() + Math.random() // Три случайных числа для большей энтропии
+    }));
+    
+    // Сортируем по убыванию веса
+    questionsWithWeights.sort((a, b) => b.weight - a.weight);
+    
+    // Берем первые 10 вопросов
+    return questionsWithWeights.slice(0, 10).map(item => item.question);
+}
+
+// Еще один вариант - комбинированный подход
+function getRandomQuestionsCombined() {
+    // Шаг 1: Первое перемешивание
+    let shuffled = [...questions];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    
+    // Шаг 2: Второе перемешивание с другим алгоритмом
+    shuffled = shuffled
+        .map(question => ({ question, sort: Math.random() }))
+        .sort((a, b) => a.sort - b.sort)
+        .map(({ question }) => question);
+    
+    // Шаг 3: Третье перемешивание для максимальной случайности
+    const finalShuffle = [];
+    const tempArray = [...shuffled];
+    
+    while (tempArray.length > 0) {
+        const randomIndex = Math.floor(Math.random() * tempArray.length);
+        finalShuffle.push(tempArray.splice(randomIndex, 1)[0]);
+    }
+    
+    return finalShuffle.slice(0, 10);
 }
 
 // Функция для удаления символа * из правильных ответов
@@ -210,7 +267,10 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('start-time').textContent = formatDateTime(examStartTime);
     document.getElementById('exam-info').style.display = 'block';
     
-    currentQuestions = getRandomQuestions();
+    // Используем улучшенную функцию перемешивания
+    //currentQuestions = getRandomQuestions(); // или getRandomQuestionsCombined() для максимальной случайности
+	currentQuestions = getRandomQuestionsCombined();
+    
     displayQuestions();
     
     // Скрываем кнопку перезапуска в начале экзамена
