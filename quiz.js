@@ -3,6 +3,11 @@ let userAnswers = {};
 let examStartTime = null;
 let examCompleted = false;
 
+// Функция для сброса прокрутки при загрузке страницы
+function resetScrollPosition() {
+    window.scrollTo(0, 0);
+}
+
 // Функция для выбора случайных вопросов
 function getRandomQuestions() {
     const shuffled = [...questions].sort(() => 0.5 - Math.random());
@@ -198,6 +203,9 @@ function submitQuiz() {
 
 // Инициализация при загрузке страницы
 document.addEventListener('DOMContentLoaded', function() {
+    // Сбрасываем позицию прокрутки при загрузке страницы
+    resetScrollPosition();
+    
     examStartTime = new Date();
     document.getElementById('start-time').textContent = formatDateTime(examStartTime);
     document.getElementById('exam-info').style.display = 'block';
@@ -207,4 +215,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Скрываем кнопку перезапуска в начале экзамена
     document.getElementById('restart-btn').style.display = 'none';
+    
+    // Также сбрасываем прокрутку при событии beforeunload (перед перезагрузкой)
+    window.addEventListener('beforeunload', resetScrollPosition);
 });
