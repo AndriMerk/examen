@@ -43,6 +43,14 @@ function updateProgress() {
     }
 }
 
+// Функция для блокировки радио-кнопок после завершения экзамена
+function lockRadioButtons() {
+    const radioButtons = document.querySelectorAll('input[type="radio"]');
+    radioButtons.forEach(radio => {
+        radio.disabled = true;
+    });
+}
+
 // Функция для отображения вопросов
 function displayQuestions() {
     const container = document.getElementById('quiz-container');
@@ -76,8 +84,10 @@ function displayQuestions() {
             
             // Сохраняем выбор пользователя
             input.addEventListener('change', () => {
-                userAnswers[index] = answerIndex;
-                updateProgress();
+                if (!examCompleted) { // Только если экзамен не завершен
+                    userAnswers[index] = answerIndex;
+                    updateProgress();
+                }
             });
             
             const label = document.createElement('label');
@@ -175,10 +185,15 @@ function submitQuiz() {
     
     examCompleted = true;
     const result = checkAnswers();
-    displayResults(result);
     
     // Блокируем кнопку отправки после завершения
     document.getElementById('submit-btn').disabled = true;
+    
+    // Блокируем все радио-кнопки
+    lockRadioButtons();
+    
+    // Отображаем результаты
+    displayResults(result);
 }
 
 // Инициализация при загрузке страницы
